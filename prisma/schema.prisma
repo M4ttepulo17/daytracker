@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  days         Day[]
+  settings     Settings?
+  sports       Sport[]
+}
+
+model Settings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  sleepTargetHours    Float    @default(8)
+  pagesTarget         Int      @default(20)
+  studyTargetMinutes  Int      @default(60)
+  instagramMaxMinutes Int      @default(30)
+  minWords            Int      @default(20)
+  theme               String   @default("system")
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Sport {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  isDefault Boolean  @default(false)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  days      Day[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+}
+
+model Day {
+  id               String   @id @default(cuid())
+  userId           String
+  date             DateTime @db.Date
+  description      String
+  sleepHours       Int
+  pagesRead        Int
+  instagramMinutes Int
+  prayer           Boolean  @default(false)
+  sportId          String?
+  workoutRating    Float?
+  musicPlayed      Boolean  @default(false)
+  studyMinutes     Int
+  economicProject  Boolean  @default(false)
+  economicNotes    String?
+  dayRating        Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  sleepMinutes     Int      @default(0)
+  workoutDuration  Int?
+  workoutKm        Float?
+  studySubject     String?
+  sport            Sport?   @relation(fields: [sportId], references: [id])
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
