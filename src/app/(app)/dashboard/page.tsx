@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState<number>(0);
   const [habitStreaks, setHabitStreaks] = useState<HabitStreaks>({
-    prayer: 0, music: 0, study: 0, economicProject: 0, workout: 0,
+    prayer: 0, music: 0, study: 0, economicProject: 0, workout: 0, sleep: 0, reading: 0, instagram: 0,
   });
 
   useEffect(() => {
