@@ -113,4 +113,8 @@ export interface StatsResponse {
     overallAvgRating: number | null;
   };
   streak: { current: number; longest: number };
+  weekLabel?: string;
+  monthLabel?: string;
+  weekOffset?: number;
+  monthOffset?: number;
 }
