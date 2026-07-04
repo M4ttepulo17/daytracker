@@ -101,7 +101,7 @@ export interface SportStat {
 export interface StatsResponse {
   weekly: WeeklyMonthlyStats;
   monthly: WeeklyMonthlyStats;
-  habits: { prayer: number; study: number; music: number; economicProject: number };
+  habits: { prayer: number; study: number; music: number; economicProject: number; workout: number; sleep: number; reading: number; instagram: number };
   habitStreaks: HabitStreaks;
   habitCounts: HabitWeeklyMonthly;
   trend: TrendPoint[];
