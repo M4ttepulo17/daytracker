@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
       prayer: d.prayer,
       musicPlayed: d.musicPlayed,
       studyMinutes,
-      studyMinutes: studyMinutes,
       studySubject: studySubjects[0] ?? null,
       economicProject: d.economicProject,
       economicNotes: d.economicNotes,
