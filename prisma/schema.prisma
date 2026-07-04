@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  days         Day[]
-  settings     Settings?
-  sports       Sport[]
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  settings      Settings?
+  sports        Sport[]
+  days          Day[]
 }
 
 model Settings {
   id                  String   @id @default(cuid())
   userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   sleepTargetHours    Float    @default(8)
   pagesTarget         Int      @default(20)
   studyTargetMinutes  Int      @default(60)
@@ -28,46 +29,62 @@ model Settings {
   minWords            Int      @default(20)
   theme               String   @default("system")
   updatedAt           DateTime @updatedAt
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Sport {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
-  isDefault Boolean  @default(false)
-  archived  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  days      Day[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  isDefault Boolean    @default(false)
+  archived  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  workouts  Workout[]
   @@unique([userId, name])
+}
+
+model Workout {
+  id        String   @id @default(cuid())
+  dayId     String
+  day       Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  sportId   String
+  sport     Sport    @relation(fields: [sportId], references: [id], onDelete: Cascade)
+  rating    Float?
+  km        Float?
+  duration  Int?
+  createdAt DateTime @default(now())
+}
+
+model StudySession {
+  id        String   @id @default(cuid())
+  dayId     String
+  day       Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  subject   String?
+  minutes   Int
+  createdAt DateTime @default(now())
 }
 
 model Day {
   id               String   @id @default(cuid())
   userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date             DateTime @db.Date
   description      String
   sleepHours       Int
+  sleepMinutes     Int      @default(0)
   pagesRead        Int
   instagramMinutes Int
   prayer           Boolean  @default(false)
-  sportId          String?
-  workoutRating    Float?
+  workouts         Workout[]
   musicPlayed      Boolean  @default(false)
-  studyMinutes     Int
+  studySessions    StudySession[]
+  studyMinutes     Int      @default(0)
+  studySubject     String?
   economicProject  Boolean  @default(false)
   economicNotes    String?
   dayRating        Float
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  sleepMinutes     Int      @default(0)
-  workoutDuration  Int?
-  workoutKm        Float?
-  studySubject     String?
-  sport            Sport?   @relation(fields: [sportId], references: [id])
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])

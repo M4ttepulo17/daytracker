@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, History, BarChart3, Settings } from "lucide-react";
@@ -20,14 +19,11 @@ export default function BottomNav() {
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
-            <Link key={href} href={href} className="flex flex-1 flex-col items-center gap-1 py-3 transition-all">
-              <div className={clsx(
-                "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
-                active ? "bg-indigo-500/20" : ""
-              )}>
+            <Link key={href} href={href} className="flex flex-1 flex-col items-center gap-1 py-3 transition-all min-w-0">
+              <div className={clsx("flex h-8 w-8 items-center justify-center rounded-xl transition-all", active ? "bg-indigo-500/20" : "")}>
                 <Icon className={clsx("h-5 w-5 transition-colors", active ? "text-indigo-400" : "text-zinc-600")} strokeWidth={active ? 2.5 : 2} />
               </div>
-              <span className={clsx("text-[10px] font-semibold tracking-wide transition-colors", active ? "text-indigo-400" : "text-zinc-600")}>
+              <span className={clsx("text-[10px] font-semibold tracking-wide transition-colors truncate", active ? "text-indigo-400" : "text-zinc-600")}>
                 {label}
               </span>
             </Link>

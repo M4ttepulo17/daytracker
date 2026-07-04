@@ -5,6 +5,21 @@ export interface Sport {
   archived: boolean;
 }
 
+export interface Workout {
+  id: string;
+  sportId: string;
+  sport: Sport;
+  rating: number | null;
+  km: number | null;
+  duration: number | null;
+}
+
+export interface StudySession {
+  id: string;
+  subject: string | null;
+  minutes: number;
+}
+
 export interface DayRecord {
   id: string;
   date: string;
@@ -14,14 +29,10 @@ export interface DayRecord {
   pagesRead: number;
   instagramMinutes: number;
   prayer: boolean;
-  sportId: string | null;
-  sport: Sport | null;
-  workoutRating: number | null;
-  workoutKm: number | null;
-  workoutDuration: number | null;
+  workouts: Workout[];
   musicPlayed: boolean;
+  studySessions: StudySession[];
   studyMinutes: number;
-  studySubject: string | null;
   economicProject: boolean;
   economicNotes: string | null;
   dayRating: number;
@@ -44,9 +55,20 @@ export interface HabitStreaks {
   study: number;
   economicProject: number;
   workout: number;
-  sleep: number;      // streak giorni con sonno >= target
-  reading: number;    // streak giorni con almeno 1 pagina letta
-  instagram: number;  // streak giorni con instagram <= limite
+  sleep: number;
+  reading: number;
+  instagram: number;
+}
+
+export interface HabitWeeklyMonthly {
+  prayer: { week: number; month: number };
+  music: { week: number; month: number };
+  study: { week: number; month: number };
+  economicProject: { week: number; month: number };
+  workout: { week: number; month: number };
+  sleep: { week: number; month: number };
+  reading: { week: number; month: number };
+  instagram: { week: number; month: number };
 }
 
 export interface WeeklyMonthlyStats {
@@ -79,13 +101,9 @@ export interface SportStat {
 export interface StatsResponse {
   weekly: WeeklyMonthlyStats;
   monthly: WeeklyMonthlyStats;
-  habits: {
-    prayer: number;
-    study: number;
-    music: number;
-    economicProject: number;
-  };
+  habits: { prayer: number; study: number; music: number; economicProject: number };
   habitStreaks: HabitStreaks;
+  habitCounts: HabitWeeklyMonthly;
   trend: TrendPoint[];
   sports: SportStat[];
   records: {
@@ -94,8 +112,5 @@ export interface StatsResponse {
     bestMonth: { month: string; avgRating: number } | null;
     overallAvgRating: number | null;
   };
-  streak: {
-    current: number;
-    longest: number;
-  };
+  streak: { current: number; longest: number };
 }

@@ -7,9 +7,17 @@ import { countWords, sportSupportsKm, STUDY_SUBJECTS } from "@/lib/validation";
 import { DayRecord, Sport, Settings, HabitStreaks } from "@/types";
 import {
   Moon, BookOpen, Instagram, HandHeart, Dumbbell,
-  Music, GraduationCap, DollarSign, Star, Flame,
+  Music, GraduationCap, DollarSign, Star, Flame, Plus, X,
 } from "lucide-react";
 import clsx from "clsx";
+
+interface WorkoutEntry {
+  localId: string;
+  sportId: string;
+  rating: number | null;
+  km: number | "";
+  duration: number | "";
+}
 
 interface DayFormState {
   description: string;
@@ -18,17 +26,18 @@ interface DayFormState {
   pagesRead: number | "";
   instagramMinutes: number | "";
   prayer: boolean;
-  sportId: string | null;
-  workoutRating: number | null;
-  workoutKm: number | "";
-  workoutDuration: number | "";
+  workouts: WorkoutEntry[];
   musicPlayed: boolean;
   studiedToday: boolean;
   studyMinutes: number | "";
-  studySubject: string | null;
+  studySubjects: string[];
   economicProject: boolean;
   economicNotes: string;
   dayRating: number | null;
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
 }
 
 const EMPTY: DayFormState = {
@@ -38,14 +47,11 @@ const EMPTY: DayFormState = {
   pagesRead: "",
   instagramMinutes: "",
   prayer: false,
-  sportId: null,
-  workoutRating: null,
-  workoutKm: "",
-  workoutDuration: "",
+  workouts: [],
   musicPlayed: false,
   studiedToday: false,
   studyMinutes: "",
-  studySubject: null,
+  studySubjects: [],
   economicProject: false,
   economicNotes: "",
   dayRating: null,
@@ -59,14 +65,17 @@ function toForm(day: DayRecord): DayFormState {
     pagesRead: day.pagesRead,
     instagramMinutes: day.instagramMinutes,
     prayer: day.prayer,
-    sportId: day.sportId,
-    workoutRating: day.workoutRating,
-    workoutKm: day.workoutKm ?? "",
-    workoutDuration: day.workoutDuration ?? "",
+    workouts: day.workouts.map((w) => ({
+      localId: uid(),
+      sportId: w.sportId,
+      rating: w.rating,
+      km: w.km ?? "",
+      duration: w.duration ?? "",
+    })),
     musicPlayed: day.musicPlayed,
     studiedToday: day.studyMinutes > 0,
     studyMinutes: day.studyMinutes > 0 ? day.studyMinutes : "",
-    studySubject: day.studySubject ?? null,
+    studySubjects: day.studySessions.map((s) => s.subject).filter((s): s is string => !!s),
     economicProject: day.economicProject,
     economicNotes: day.economicNotes ?? "",
     dayRating: day.dayRating,
@@ -76,7 +85,7 @@ function toForm(day: DayRecord): DayFormState {
 function StreakBadge({ count }: { count: number }) {
   if (!count) return null;
   return (
-    <div className="flex items-center gap-1 rounded-full bg-orange-500/15 border border-orange-500/20 px-2 py-0.5">
+    <div className="flex flex-shrink-0 items-center gap-1 rounded-full bg-orange-500/15 border border-orange-500/20 px-2 py-0.5">
       <Flame className="h-3 w-3 text-orange-400" />
       <span className="text-[11px] font-bold text-orange-400">{count}</span>
     </div>
@@ -87,11 +96,11 @@ function Section({ title, icon, streak, children }: {
   title: string; icon: React.ReactNode; streak?: number; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/4 p-4 space-y-3">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2.5">
-          <span className="text-indigo-400">{icon}</span>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">{title}</span>
+    <div className="rounded-2xl border border-white/8 bg-white/4 p-4 space-y-3 min-w-0 w-full">
+      <div className="flex items-center justify-between gap-2 mb-1 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-indigo-400 flex-shrink-0">{icon}</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-white/50 truncate">{title}</span>
         </div>
         <StreakBadge count={streak ?? 0} />
       </div>
@@ -104,15 +113,15 @@ function PillToggle({ checked, onChange, labelYes = "Sì", labelNo = "No" }: {
   checked: boolean; onChange: (v: boolean) => void; labelYes?: string; labelNo?: string;
 }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 w-full">
       <button type="button" onClick={() => onChange(true)}
-        className={clsx("flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
+        className={clsx("flex-1 min-w-0 rounded-xl py-2.5 text-sm font-semibold transition-all truncate px-2",
           checked ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25"
                   : "bg-white/5 text-zinc-500 border border-white/8 hover:bg-white/8")}>
         {labelYes}
       </button>
       <button type="button" onClick={() => onChange(false)}
-        className={clsx("flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
+        className={clsx("flex-1 min-w-0 rounded-xl py-2.5 text-sm font-semibold transition-all truncate px-2",
           !checked ? "bg-white/10 text-white"
                    : "bg-white/5 text-zinc-500 border border-white/8 hover:bg-white/8")}>
         {labelNo}
@@ -126,16 +135,13 @@ function NumField({ label, value, onChange, unit, step = 1, min = 0, max }: {
   unit?: string; step?: number; min?: number; max?: number;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs text-zinc-500 font-medium">{label}</label>
-      <div className="relative">
-        <input
-          type="number" inputMode="decimal" value={value} step={step} min={min} max={max}
-          placeholder="0"
+    <div className="flex flex-col gap-1 min-w-0">
+      <label className="text-xs text-zinc-500 font-medium truncate">{label}</label>
+      <div className="relative min-w-0">
+        <input type="number" inputMode="decimal" value={value} step={step} min={min} max={max} placeholder="0"
           onChange={(e) => onChange(e.target.value === "" ? "" : parseFloat(e.target.value))}
-          className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
-        />
-        {unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">{unit}</span>}
+          className="w-full min-w-0 rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition" />
+        {unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 pointer-events-none">{unit}</span>}
       </div>
     </div>
   );
@@ -163,10 +169,24 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const selectedSport = sports.find((s) => s.id === form.sportId);
-  const showKmFields = selectedSport ? sportSupportsKm(selectedSport.name) : false;
   const wordCount = countWords(form.description);
   const minWords = settings.minWords;
+
+  function addWorkout() {
+    if (sports.length === 0) return;
+    update("workouts", [...form.workouts, { localId: uid(), sportId: sports[0].id, rating: null, km: "", duration: "" }]);
+  }
+  function removeWorkout(localId: string) {
+    update("workouts", form.workouts.filter((w) => w.localId !== localId));
+  }
+  function updateWorkout(localId: string, patch: Partial<WorkoutEntry>) {
+    update("workouts", form.workouts.map((w) => (w.localId === localId ? { ...w, ...patch } : w)));
+  }
+
+  function toggleSubject(subject: string) {
+    const has = form.studySubjects.includes(subject);
+    update("studySubjects", has ? form.studySubjects.filter((s) => s !== subject) : [...form.studySubjects, subject]);
+  }
 
   async function handleSave() {
     setDescError(null);
@@ -200,13 +220,15 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
           pagesRead: Number(form.pagesRead),
           instagramMinutes: Number(form.instagramMinutes),
           prayer: form.prayer,
-          sportId: form.sportId,
-          workoutRating: form.workoutRating,
-          workoutKm: form.workoutKm === "" ? null : Number(form.workoutKm),
-          workoutDuration: form.workoutDuration === "" ? null : Number(form.workoutDuration),
+          workouts: form.workouts.map((w) => ({
+            sportId: w.sportId,
+            rating: w.rating,
+            km: w.km === "" ? null : Number(w.km),
+            duration: w.duration === "" ? null : Number(w.duration),
+          })),
           musicPlayed: form.musicPlayed,
           studyMinutes: form.studiedToday ? Number(form.studyMinutes) : 0,
-          studySubject: form.studiedToday ? form.studySubject : null,
+          studySubjects: form.studiedToday ? form.studySubjects : [],
           economicProject: form.economicProject,
           economicNotes: form.economicNotes || null,
           dayRating: form.dayRating,
@@ -228,32 +250,24 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
   }
 
   return (
-    <div className="space-y-3 px-4 pb-8 pt-3">
+    <div className="space-y-3 px-4 pb-8 pt-3 w-full max-w-full min-w-0 overflow-x-hidden">
 
       {/* Descrizione */}
-      <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-        <label className="block text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3">
-          ✦ Com'è andata oggi?
-        </label>
-        <textarea
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-          rows={5}
+      <div className="rounded-2xl border border-white/8 bg-white/4 p-4 min-w-0 w-full">
+        <label className="block text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3">✦ Com'è andata oggi?</label>
+        <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={5}
           placeholder="Scrivi qualcosa sulla tua giornata..."
-          className="w-full resize-none bg-transparent text-sm text-white/90 placeholder-zinc-600 outline-none leading-relaxed"
-        />
-        <div className="mt-2 flex justify-between items-center border-t border-white/6 pt-2">
-          <span className={clsx("text-xs", wordCount < minWords ? "text-red-400" : "text-zinc-600")}>
+          className="w-full min-w-0 resize-none bg-transparent text-sm text-white/90 placeholder-zinc-600 outline-none leading-relaxed break-words" />
+        <div className="mt-2 flex justify-between items-center border-t border-white/6 pt-2 gap-2">
+          <span className={clsx("text-xs truncate", wordCount < minWords ? "text-red-400" : "text-zinc-600")}>
             {wordCount} / {minWords} parole minime
           </span>
-          {wordCount >= minWords && wordCount > 0 && (
-            <span className="text-xs text-emerald-500">✓</span>
-          )}
+          {wordCount >= minWords && wordCount > 0 && <span className="text-xs text-emerald-500 flex-shrink-0">✓</span>}
         </div>
-        {descError && <p className="mt-1 text-xs text-red-400 animate-fade-in">{descError}</p>}
+        {descError && <p className="mt-1 text-xs text-red-400 animate-fade-in break-words">{descError}</p>}
       </div>
 
-      {/* Sonno — streak: giorni consecutivi sopra il target */}
+      {/* Sonno */}
       <Section title="Sonno" icon={<Moon className="h-4 w-4" />} streak={habitStreaks?.sleep}>
         <div className="grid grid-cols-2 gap-2">
           <NumField label="Ore" value={form.sleepHours} onChange={(v) => update("sleepHours", v)} unit="h" min={0} max={24} />
@@ -261,12 +275,12 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
         </div>
       </Section>
 
-      {/* Lettura — streak: giorni consecutivi con almeno 1 pagina */}
+      {/* Lettura */}
       <Section title="Lettura" icon={<BookOpen className="h-4 w-4" />} streak={habitStreaks?.reading}>
         <NumField label="Pagine lette" value={form.pagesRead} onChange={(v) => update("pagesRead", v)} unit="pag" />
       </Section>
 
-      {/* Instagram — streak: giorni consecutivi sotto il limite */}
+      {/* Instagram */}
       <Section title="Instagram" icon={<Instagram className="h-4 w-4" />} streak={habitStreaks?.instagram}>
         <NumField label="Minuti usati" value={form.instagramMinutes} onChange={(v) => update("instagramMinutes", v)} unit="min" />
       </Section>
@@ -276,41 +290,55 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
         <PillToggle checked={form.prayer} onChange={(v) => update("prayer", v)} labelYes="✓ Sì" labelNo="✗ No" />
       </Section>
 
-      {/* Allenamento */}
+      {/* Allenamento — multipli */}
       <Section title="Allenamento" icon={<Dumbbell className="h-4 w-4" />} streak={habitStreaks?.workout}>
-        <div className="flex flex-wrap gap-2">
-          <button type="button"
-            onClick={() => { update("sportId", null); update("workoutRating", null); update("workoutKm", ""); update("workoutDuration", ""); }}
-            className={clsx("rounded-full px-4 py-1.5 text-xs font-semibold transition-all",
-              form.sportId === null
-                ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/30"
-                : "bg-white/6 text-zinc-400 border border-white/10 hover:bg-white/10")}>
-            Riposo
-          </button>
-          {sports.map((sport) => (
-            <button key={sport.id} type="button" onClick={() => update("sportId", sport.id)}
-              className={clsx("rounded-full px-4 py-1.5 text-xs font-semibold transition-all",
-                form.sportId === sport.id
-                  ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/30"
-                  : "bg-white/6 text-zinc-400 border border-white/10 hover:bg-white/10")}>
-              {sport.name}
-            </button>
-          ))}
-        </div>
-        {form.sportId !== null && (
-          <div className="space-y-3 animate-fade-in pt-1">
-            {showKmFields && (
-              <div className="grid grid-cols-2 gap-2">
-                <NumField label="Distanza" value={form.workoutKm} onChange={(v) => update("workoutKm", v)} unit="km" step={0.1} />
-                <NumField label="Durata" value={form.workoutDuration} onChange={(v) => update("workoutDuration", v)} unit="min" />
-              </div>
-            )}
-            <div>
-              <label className="block text-xs text-zinc-500 font-medium mb-2">Voto allenamento</label>
-              <RatingPicker value={form.workoutRating} onChange={(v) => update("workoutRating", v)} allowDecimals />
-            </div>
-          </div>
+        {form.workouts.length === 0 && (
+          <p className="text-xs text-zinc-600">Nessun allenamento aggiunto oggi.</p>
         )}
+        <div className="space-y-3">
+          {form.workouts.map((w, idx) => {
+            const sport = sports.find((s) => s.id === w.sportId);
+            const showKm = sport ? sportSupportsKm(sport.name) : false;
+            return (
+              <div key={w.localId} className="rounded-xl border border-white/8 bg-white/3 p-3 space-y-3 min-w-0">
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500 flex-shrink-0">
+                    Allenamento {idx + 1}
+                  </span>
+                  <button type="button" onClick={() => removeWorkout(w.localId)}
+                    className="flex-shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 min-w-0">
+                  {sports.map((s) => (
+                    <button key={s.id} type="button" onClick={() => updateWorkout(w.localId, { sportId: s.id })}
+                      className={clsx("rounded-full px-3 py-1.5 text-xs font-semibold transition-all max-w-full truncate",
+                        w.sportId === s.id
+                          ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/30"
+                          : "bg-white/6 text-zinc-400 border border-white/10 hover:bg-white/10")}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+                {showKm && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumField label="Distanza" value={w.km} onChange={(v) => updateWorkout(w.localId, { km: v })} unit="km" step={0.1} />
+                    <NumField label="Durata" value={w.duration} onChange={(v) => updateWorkout(w.localId, { duration: v })} unit="min" />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs text-zinc-500 font-medium mb-2">Voto allenamento</label>
+                  <RatingPicker value={w.rating} onChange={(v) => updateWorkout(w.localId, { rating: v })} allowDecimals />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button type="button" onClick={addWorkout} disabled={sports.length === 0}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-500/30 bg-indigo-500/5 py-2.5 text-xs font-semibold text-indigo-400 transition hover:bg-indigo-500/10 disabled:opacity-40">
+          <Plus className="h-3.5 w-3.5" /> Aggiungi allenamento
+        </button>
       </Section>
 
       {/* Musica */}
@@ -318,25 +346,22 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
         <PillToggle checked={form.musicPlayed} onChange={(v) => update("musicPlayed", v)} labelYes="✓ Ho suonato" labelNo="✗ No" />
       </Section>
 
-      {/* Studio */}
+      {/* Studio — multi materia, un totale minuti */}
       <Section title="Studio" icon={<GraduationCap className="h-4 w-4" />} streak={habitStreaks?.study}>
         <PillToggle
           checked={form.studiedToday}
-          onChange={(v) => { update("studiedToday", v); if (!v) { update("studyMinutes", ""); update("studySubject", null); } }}
-          labelYes="✓ Ho studiato"
-          labelNo="✗ No"
-        />
+          onChange={(v) => { update("studiedToday", v); if (!v) { update("studyMinutes", ""); update("studySubjects", []); } }}
+          labelYes="✓ Ho studiato" labelNo="✗ No" />
         {form.studiedToday && (
           <div className="space-y-3 animate-fade-in">
-            <NumField label="Minuti di studio" value={form.studyMinutes} onChange={(v) => update("studyMinutes", v)} unit="min" />
-            <div>
-              <label className="block text-xs text-zinc-500 font-medium mb-2">Materia</label>
+            <NumField label="Minuti di studio totali" value={form.studyMinutes} onChange={(v) => update("studyMinutes", v)} unit="min" />
+            <div className="min-w-0">
+              <label className="block text-xs text-zinc-500 font-medium mb-2">Materie (puoi selezionarne più di una)</label>
               <div className="flex flex-wrap gap-1.5">
                 {STUDY_SUBJECTS.map((subject) => (
-                  <button key={subject} type="button"
-                    onClick={() => update("studySubject", form.studySubject === subject ? null : subject)}
-                    className={clsx("rounded-full px-3 py-1 text-xs font-semibold transition-all",
-                      form.studySubject === subject
+                  <button key={subject} type="button" onClick={() => toggleSubject(subject)}
+                    className={clsx("rounded-full px-3 py-1 text-xs font-semibold transition-all max-w-full truncate",
+                      form.studySubjects.includes(subject)
                         ? "bg-indigo-500 text-white shadow-sm shadow-indigo-500/30"
                         : "bg-white/6 text-zinc-400 border border-white/10 hover:bg-white/10")}>
                     {subject}
@@ -352,10 +377,8 @@ export default function DayForm({ date, initialDay, sports, settings, onSaved, h
       <Section title="Progetto Economico" icon={<DollarSign className="h-4 w-4" />} streak={habitStreaks?.economicProject}>
         <PillToggle checked={form.economicProject} onChange={(v) => update("economicProject", v)} labelYes="✓ Sì" labelNo="✗ No" />
         {form.economicProject && (
-          <textarea value={form.economicNotes} onChange={(e) => update("economicNotes", e.target.value)}
-            rows={2} placeholder="Note (opzionale)..."
-            className="w-full animate-fade-in resize-none rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-indigo-500/60 transition"
-          />
+          <textarea value={form.economicNotes} onChange={(e) => update("economicNotes", e.target.value)} rows={2} placeholder="Note (opzionale)..."
+            className="w-full min-w-0 animate-fade-in resize-none rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-indigo-500/60 transition break-words" />
         )}
       </Section>
 

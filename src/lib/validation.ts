@@ -11,19 +11,20 @@ export function sportSupportsKm(sportName: string): boolean {
 }
 
 export const STUDY_SUBJECTS = [
-  "Italiano",
-  "Inglese",
-  "Storia",
-  "Filosofia",
-  "Arte",
-  "Matematica",
-  "Fisica",
-  "Informatica",
-  "Scienze",
-  "Ed. Civica",
-  "Scienze Motorie",
-  "Altro",
+  "Italiano", "Inglese", "Storia", "Filosofia", "Arte", "Matematica",
+  "Fisica", "Informatica", "Scienze", "Ed. Civica", "Scienze Motorie", "Altro",
 ];
+
+const workoutSchema = z.object({
+  sportId: z.string(),
+  rating: z.number().min(1).max(10).nullable().optional(),
+  km: z.number().min(0).nullable().optional(),
+  duration: z.number().int().min(0).nullable().optional(),
+});
+
+const studySessionSchema = z.object({
+  subject: z.string().nullable().optional(),
+});
 
 export const daySchema = z.object({
   date: z.string(),
@@ -33,13 +34,10 @@ export const daySchema = z.object({
   pagesRead: z.number().int().min(0),
   instagramMinutes: z.number().int().min(0),
   prayer: z.boolean(),
-  sportId: z.string().nullable().optional(),
-  workoutRating: z.number().min(1).max(10).nullable().optional(),
-  workoutKm: z.number().min(0).nullable().optional(),
-  workoutDuration: z.number().int().min(0).nullable().optional(),
+  workouts: z.array(workoutSchema).default([]),
   musicPlayed: z.boolean(),
-  studyMinutes: z.number().int().min(0),
-  studySubject: z.string().nullable().optional(),
+  studyMinutes: z.number().int().min(0).default(0),
+  studySubjects: z.array(z.string()).default([]),
   economicProject: z.boolean(),
   economicNotes: z.string().nullable().optional(),
   dayRating: z.number().min(1).max(10),
@@ -61,3 +59,16 @@ export type SettingsInput = z.infer<typeof settingsSchema>;
 export const sportSchema = z.object({
   name: z.string().min(1).max(50),
 });
+
+// ============================================================
+// Logica "giorno effettivo da compilare"
+// La giornata da compilare NON cambia a mezzanotte: resta quella
+// di ieri finché non viene salvata, poi passa a oggi.
+// ============================================================
+export function getEffectiveDateToFill(
+  todayStr: string,
+  yesterdayStr: string,
+  yesterdayIsFilled: boolean
+): string {
+  return yesterdayIsFilled ? todayStr : yesterdayStr;
+}
