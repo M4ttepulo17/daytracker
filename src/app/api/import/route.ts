@@ -8,7 +8,7 @@ interface ImportDay {
   date: string; description: string; sleepHours: number; sleepMinutes?: number;
   pagesRead: number; instagramMinutes: number; prayer: boolean;
   workouts?: ImportWorkout[]; sport?: string | null; workoutRating?: number | null;
-  musicPlayed: boolean; studyMinutes?: number; studyMinutes?: number;
+  musicPlayed: boolean; studyMinutes?: number;
   studySubjects?: string[]; studySubject?: string | null;
   economicProject: boolean; economicNotes: string | null; dayRating: number;
 }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   for (const d of payload.days) {
     const dateObj = parseDate(d.date);
 
-    const studyMinutes = d.studyMinutes ?? d.studyMinutes ?? 0;
+    const studyMinutes = d.studyMinutes ?? 0;
     const studySubjects = d.studySubjects ?? (d.studySubject ? [d.studySubject] : []);
     const workouts: ImportWorkout[] = d.workouts ?? (d.sport ? [{ sport: d.sport, rating: d.workoutRating ?? null, km: null, duration: null }] : []);
 
